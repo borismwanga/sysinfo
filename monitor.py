@@ -101,9 +101,6 @@ class RealTimeSystemMonitor:
             try:
                 # Clear screen
                 stdscr.clear()
-            except curses.error:
-                # Handle curses errors (e.g., terminal resize)
-                continue
                 
                 # Calculate dimensions and positions
                 screen_height, screen_width = stdscr.getmaxyx()
@@ -131,4 +128,167 @@ class RealTimeSystemMonitor:
                 
                 # Display system information if enabled
                 if self.config["show_system_info"]:
-                    system_info = get_
+                    system_info = get_system_info()
+                    
+                    stdscr.attron(curses.color_pair(2) | curses.A_BOLD)
+                    stdscr.addstr(info_y, info_x, "SYSTEM INFORMATION")
+                    stdscr.attroff(curses.color_pair(2) | curses.A_BOLD)
+                    info_y += 1
+                    
+                    for key, value in system_info.items():
+                        if info_y < screen_height - 1:
+                            stdscr.attron(curses.color_pair(2))
+                            stdscr.addstr(info_y, info_x, f"{key}: ")
+                            stdscr.attroff(curses.color_pair(2))
+                            
+                            stdscr.attron(curses.color_pair(3))
+                            stdscr.addstr(f"{value}"[:screen_width - info_x - len(key) - 3])
+                            stdscr.attroff(curses.color_pair(3))
+                            
+                            info_y += 1
+                
+                # Display resource information if enabled
+                if self.config["show_resources"]:
+                    resources = get_resource_usage(self.gpu_available)
+                    
+                    info_y += 1
+                    if info_y < screen_height - 1:
+                        stdscr.attron(curses.color_pair(2) | curses.A_BOLD)
+                        stdscr.addstr(info_y, info_x, "RESOURCE USAGE")
+                        stdscr.attroff(curses.color_pair(2) | curses.A_BOLD)
+                        info_y += 1
+                    
+                    # CPU
+                    if info_y < screen_height - 1:
+                        stdscr.attron(curses.color_pair(2))
+                        stdscr.addstr(info_y, info_x, f"CPU Usage: ")
+                        stdscr.attroff(curses.color_pair(2))
+                        
+                        stdscr.attron(curses.color_pair(3))
+                        stdscr.addstr(f"{resources['CPU Usage']:.1f}%")
+                        stdscr.attroff(curses.color_pair(3))
+                        
+                        # Draw progress bar
+                        bar_width = min(40, screen_width - info_x - 20)
+                        if bar_width > 5:
+                            self.draw_progress_bar(
+                                stdscr, info_y, info_x + 20, 
+                                bar_width, resources['CPU Usage'],
+                                5, 6
+                            )
+                        
+                        info_y += 1
+                    
+                    # Memory
+                    if info_y < screen_height - 1:
+                        mem = resources["Memory"]
+                        stdscr.attron(curses.color_pair(2))
+                        stdscr.addstr(info_y, info_x, f"Memory: ")
+                        stdscr.attroff(curses.color_pair(2))
+                        
+                        stdscr.attron(curses.color_pair(3))
+                        mem_text = f"{format_bytes(mem['used'])} / {format_bytes(mem['total'])} ({mem['percent']:.1f}%)"
+                        stdscr.addstr(mem_text[:screen_width - info_x - 8])
+                        stdscr.attroff(curses.color_pair(3))
+                        
+                        info_y += 1
+                        
+                        # Draw memory progress bar
+                        if info_y < screen_height - 1:
+                            bar_width = min(40, screen_width - info_x - 10)
+                            if bar_width > 5:
+                                self.draw_progress_bar(
+                                    stdscr, info_y, info_x + 10, 
+                                    bar_width, mem['percent'],
+                                    5, 6
+                                )
+                            info_y += 1
+                    
+                    # GPU (if available)
+                    if "GPU" in resources and info_y < screen_height - 3:
+                        gpu = resources["GPU"]
+                        info_y += 1
+                        
+                        stdscr.attron(curses.color_pair(2))
+                        stdscr.addstr(info_y, info_x, f"GPU: ")
+                        stdscr.attroff(curses.color_pair(2))
+                        
+                        stdscr.attron(curses.color_pair(3))
+                        stdscr.addstr(f"{gpu['name']}"[:screen_width - info_x - 6])
+                        stdscr.attroff(curses.color_pair(3))
+                        
+                        info_y += 1
+                        
+                        if info_y < screen_height - 1:
+                            stdscr.attron(curses.color_pair(2))
+                            stdscr.addstr(info_y, info_x, f"GPU Usage: ")
+                            stdscr.attroff(curses.color_pair(2))
+                            
+                            stdscr.attron(curses.color_pair(3))
+                            stdscr.addstr(f"{gpu['usage']:.1f}%")
+                            stdscr.attroff(curses.color_pair(3))
+                            
+                            # Draw GPU usage progress bar
+                            bar_width = min(40, screen_width - info_x - 20)
+                            if bar_width > 5:
+                                self.draw_progress_bar(
+                                    stdscr, info_y, info_x + 20, 
+                                    bar_width, gpu['usage'],
+                                    5, 6
+                                )
+                            
+                            info_y += 1
+                        
+                        if info_y < screen_height - 1:
+                            stdscr.attron(curses.color_pair(2))
+                            stdscr.addstr(info_y, info_x, f"GPU Memory: ")
+                            stdscr.attroff(curses.color_pair(2))
+                            
+                            stdscr.attron(curses.color_pair(3))
+                            vram_text = f"{gpu['memory']['used']:.1f} / {gpu['memory']['total']:.1f} MB ({gpu['memory']['percent']:.1f}%)"
+                            stdscr.addstr(vram_text[:screen_width - info_x - 12])
+                            stdscr.attroff(curses.color_pair(3))
+                            
+                            info_y += 1
+                
+                # Display clock if enabled
+                if self.config["show_clock"]:
+                    clock_y = screen_height - 2
+                    now = datetime.now()
+                    clock_str = now.strftime("%Y-%m-%d %H:%M:%S")
+                    
+                    stdscr.attron(curses.color_pair(1) | curses.A_BOLD)
+                    stdscr.addstr(clock_y, max(0, screen_width - len(clock_str) - 1), clock_str)
+                    stdscr.attroff(curses.color_pair(1) | curses.A_BOLD)
+                
+                # Display help at the bottom
+                help_text = "Press 'q' to quit, 'c' for config"
+                stdscr.attron(curses.A_DIM)
+                stdscr.addstr(screen_height - 1, 0, help_text[:screen_width-1])
+                stdscr.attroff(curses.A_DIM)
+                
+                # Refresh the screen
+                stdscr.refresh()
+                
+                # Handle input (non-blocking)
+                stdscr.nodelay(True)
+                key = stdscr.getch()
+                
+                if key == ord('q'):
+                    self.running = False
+                elif key == ord('c'):
+                    # Toggle features
+                    self.config["show_system_info"] = not self.config["show_system_info"]
+                
+                # Sleep for refresh rate
+                time.sleep(self.refresh_rate)
+                
+            except KeyboardInterrupt:
+                self.running = False
+            except curses.error:
+                # Terminal size might have changed, just continue
+                pass
+    
+    def run(self):
+        """Run the monitor"""
+        curses.wrapper(self.curses_main)
