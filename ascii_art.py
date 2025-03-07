@@ -1,8 +1,13 @@
 """
-ASCII art collection for RTSM
+Real-Time System Monitor (RTSM) - ASCII Art Module
+
+This file contains the ASCII art collection and related functions
+for displaying system logos.
 """
 
-# ASCII Art collection for different operating systems
+import platform
+
+# ASCII Art collection
 ASCII_ART = {
     "linux": """
     ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠀⠀⠀⠀⠀⠀⠀
@@ -13,7 +18,6 @@ ASCII_ART = {
     ⠀⠀⠈⣦⣤⣤⡞⠛⠛⠏⠀⠰⣤⣼⠟⠀⠀⠀⠀
     ⠀⠀⠀⠈⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
     """,
-    
     "macos": """
     ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⡀⠀⠀
     ⠀⠀⠀⠀⠀⢀⣄⣴⣶⣶⣿⣿⣿⣿⣿⣿⡇⠀⠀
@@ -23,7 +27,6 @@ ASCII_ART = {
     ⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⠏⠀⠀⠀⠀⠀⠀
     ⠀⠀⠀⠈⠻⢿⣿⣿⣿⣿⡿⠏⠀⠀⠀⠀⠀⠀⠀
     """,
-    
     "windows": """
     ⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⣀⣀⡀⠀⠀⠀⠀
     ⠀⠀⠀⠀⠀⠀⡠⠒⠁⠀⠀⠀⠀⠀⠈⠑⢄⠀⠀
@@ -32,7 +35,6 @@ ASCII_ART = {
     ⠀⠀⠀⠀⠀⠀⠈⠒⠤⣀⡀⠀⠀⠀⠀⢀⡌⠀⠀
     ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠉⠉⠉⠁⠀⠀⠀
     """,
-    
     "default": """
     ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣠⣤⣤⣶⣶⣿⣷⣆⠀⠀⠀⠀
     ⠀⠀⠀⢀⣤⣤⣶⣶⣾⣿⣿⣿⣿⣿⡿⣿⣿⣿⣿⣿⡆⠀⠀⠀
@@ -51,35 +53,17 @@ ASCII_ART = {
 }
 
 
-def get_ascii_art(system_name, custom_file=None):
-    """
-    Get ASCII art for the system or from a custom file
-    
-    Args:
-        system_name (str): The system name (linux, macos, windows)
-        custom_file (str, optional): Path to a custom ASCII art file
-        
-    Returns:
-        str: The ASCII art as a string
-    """
-    # Try to load custom ASCII art if specified
-    if custom_file:
+def get_ascii_art(custom_ascii=None):
+    """Get ASCII art for the current system or from custom file"""
+    if custom_ascii:
         try:
-            with open(custom_file, 'r') as f:
+            with open(custom_ascii, 'r') as f:
                 return f.read()
-        except (FileNotFoundError, IOError) as e:
-            print(f"Warning: Could not load custom ASCII art: {e}", file=sys.stderr)
+        except FileNotFoundError:
+            pass
     
-    # Get system-specific ASCII art or default
-    system_name = system_name.lower()
-    return ASCII_ART.get(system_name, ASCII_ART["default"])
-
-
-# Allow direct execution for testing
-if __name__ == "__main__":
-    import sys
-    import platform
-    
-    # Print ASCII art for current system
+    # Default ASCII art based on OS
     system = platform.system().lower()
-    print(get_ascii_art(system))
+    if system in ASCII_ART:
+        return ASCII_ART[system]
+    return ASCII_ART["default"]  # Fallback
